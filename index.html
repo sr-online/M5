@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>การออกแบบและเทคโนโลยี ม.5</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; }
+
+        /* Popup */
+        .popup-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .popup-box { background: white; border-radius: 20px; padding: 40px 30px; max-width: 420px; width: 90%; text-align: center; animation: popIn 0.5s ease; }
+        .popup-box h2 { color: #764ba2; font-size: 1.4rem; margin-bottom: 10px; }
+        .popup-box p { color: #555; margin-bottom: 20px; font-size: 1rem; }
+        .popup-box .emoji { font-size: 3rem; margin-bottom: 15px; }
+        .popup-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 40px; border-radius: 30px; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; }
+        .popup-btn:hover { transform: scale(1.05); }
+        @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* Header */
+        .header { background: rgba(255,255,255,0.95); padding: 20px; text-align: center; box-shadow: 0 2px 20px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 100; }
+        .header h1 { color: #764ba2; font-size: 1.3rem; }
+        .header p { color: #888; font-size: 0.85rem; }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+
+        /* Student Info */
+        .student-info { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .student-info h3 { color: #764ba2; margin-bottom: 15px; font-size: 1.1rem; }
+        .form-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+        .form-row input, .form-row select { flex: 1; min-width: 120px; padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; transition: border-color 0.3s; }
+        .form-row input:focus, .form-row select:focus { border-color: #764ba2; outline: none; }
+        .save-info-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 24px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; margin-top: 10px; }
+
+        /* Menu Section */
+        .menu-section { margin-bottom: 20px; }
+        .menu-section-title { color: white; font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; padding-left: 4px; display: flex; align-items: center; gap: 8px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+        .menu-card { background: white; border-radius: 14px; padding: 20px 14px; text-align: center; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.08); transition: transform 0.2s, box-shadow 0.2s; }
+        .menu-card:hover { transform: translateY(-4px); box-shadow: 0 8px 25px rgba(0,0,0,0.15); }
+        .menu-card .icon { font-size: 2.2rem; margin-bottom: 8px; }
+        .menu-card .label { font-size: 0.9rem; color: #333; font-weight: 600; }
+        .menu-card.notebook { border-left: 4px solid #f093fb; }
+        .menu-card.quiz { border-left: 4px solid #4facfe; }
+        .menu-card.message { border-left: 4px solid #43e97b; }
+        .menu-card.content { border-left: 4px solid #fa709a; }
+
+        /* Quiz Start */
+        .quiz-intro { text-align: center; padding: 30px 20px; }
+        .quiz-intro p { color: #888; margin-bottom: 16px; line-height: 1.6; }
+        .quiz-intro .info-list { text-align: left; background: #f8f4ff; padding: 16px 20px; border-radius: 12px; margin-bottom: 20px; color: #555; line-height: 1.8; }
+        .start-quiz-btn { background: linear-gradient(135deg, #4facfe, #00f2fe); color: white; border: none; padding: 14px 40px; border-radius: 30px; font-size: 1.1rem; cursor: pointer; transition: transform 0.2s; font-weight: 600; }
+        .start-quiz-btn:hover { transform: scale(1.05); }
+
+        /* Section Panel */
+        .section-panel { background: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; animation: fadeIn 0.3s ease; }
+        .section-panel.active { display: block; }
+        .section-panel h2 { color: #764ba2; margin-bottom: 10px; font-size: 1.2rem; }
+        .situation { background: #f8f4ff; padding: 16px; border-radius: 12px; margin-bottom: 16px; color: #555; line-height: 1.7; }
+        .situation strong { color: #764ba2; }
+        .section-panel textarea { width: 100%; min-height: 120px; padding: 14px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 1rem; resize: vertical; transition: border-color 0.3s; font-family: inherit; }
+        .section-panel textarea:focus { border-color: #764ba2; outline: none; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .submit-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-size: 1rem; cursor: pointer; margin-top: 12px; width: 100%; transition: transform 0.2s; }
+        .submit-btn:hover { transform: scale(1.02); }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .back-btn { background: #eee; color: #555; border: none; padding: 10px 24px; border-radius: 10px; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
+
+        /* Quiz */
+        .timer-bar { background: #f0f0f0; border-radius: 10px; height: 8px; margin-bottom: 16px; overflow: hidden; }
+        .timer-bar .fill { height: 100%; background: linear-gradient(90deg, #43e97b, #38f9d7); transition: width 1s linear; border-radius: 10px; }
+        .timer-bar .fill.warning { background: linear-gradient(90deg, #f093fb, #f5576c); }
+        .timer-text { text-align: center; font-size: 1.1rem; font-weight: 700; margin-bottom: 12px; color: #333; }
+        .quiz-question { background: #f8f4ff; padding: 16px; border-radius: 12px; margin-bottom: 14px; }
+        .quiz-question p { font-weight: 600; margin-bottom: 10px; color: #333; }
+        .quiz-option { display: block; padding: 10px 14px; margin: 6px 0; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; transition: all 0.2s; background: white; }
+        .quiz-option:hover { border-color: #764ba2; background: #f8f4ff; }
+        .quiz-option.selected { border-color: #764ba2; background: #764ba2; color: white; }
+        .quiz-option.correct { border-color: #43e97b; background: #e8fdf0; color: #2d8a56; }
+        .quiz-option.wrong { border-color: #f5576c; background: #fde8eb; color: #c0392b; }
+        .quiz-result { text-align: center; padding: 20px; background: #f8f4ff; border-radius: 16px; margin-top: 16px; }
+        .quiz-result .score { font-size: 3rem; font-weight: 800; color: #764ba2; }
+        .quiz-result .score-label { color: #888; }
+
+        /* Content */
+        .content-page { line-height: 1.8; color: #444; }
+        .content-page h3 { color: #764ba2; margin: 16px 0 8px; }
+        .content-page p { margin-bottom: 10px; }
+
+        /* Toast */
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: #333; color: white; padding: 14px 28px; border-radius: 12px; z-index: 2000; display: none; font-size: 0.95rem; animation: fadeIn 0.3s ease; }
+
+        @media (max-width: 600px) {
+            .menu-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+            .header h1 { font-size: 1.1rem; }
+            .popup-box { padding: 30px 20px; }
+            .form-row { flex-direction: column; }
+            .quiz-intro .info-list { font-size: 0.9rem; }
+        }
+        @media (min-width: 601px) and (max-width: 1024px) {
+            .menu-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Welcome Popup -->
+<div class="popup-overlay" id="welcomePopup">
+    <div class="popup-box">
+        <div class="emoji">⚡</div>
+        <h2>ยินดีต้อนรับเข้าสู่<br>มหกรรมเคลียร์งาน<br>ของคุณครูสายฟ้า</h2>
+        <p>ใครเหลืองานอะไร เลือกงานทำได้เลยจ้า 🎉</p>
+        <button class="popup-btn" onclick="closePopup()">เข้าสู่เว็บไซต์</button>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="header">
+    <h1>📐 การออกแบบและเทคโนโลยี ม.5</h1>
+    <p>ภาคเรียนที่ 2 ปีการศึกษา 2568</p>
+</div>
+
+<div class="container">
+
+    <!-- Student Info -->
+    <div class="student-info" id="studentInfo">
+        <h3>📝 กรอกข้อมูลนักเรียน</h3>
+        <div class="form-row">
+            <input type="text" id="studentName" placeholder="ชื่อ-นามสกุล">
+        </div>
+        <div class="form-row">
+            <select id="studentClass">
+                <option value="">-- เลือกห้อง --</option>
+                <option value="ม.5/1">ม.5/1</option>
+                <option value="ม.5/2">ม.5/2</option>
+                <option value="ม.5/3">ม.5/3</option>
+                <option value="ม.5/4">ม.5/4</option>
+                <option value="ม.5/5">ม.5/5</option>
+                <option value="ม.5/6">ม.5/6</option>
+                <option value="ม.5/7">ม.5/7</option>
+                <option value="ม.5/8">ม.5/8</option>
+                <option value="ม.5/9">ม.5/9</option>
+            </select>
+            <input type="number" id="studentNumber" placeholder="เลขที่" min="1" max="60">
+        </div>
+        <button class="save-info-btn" onclick="saveStudentInfo()">💾 บันทึกและเข้าใช้งาน</button>
+        <div id="savedInfo" style="margin-top:10px; color:#43e97b; font-weight:600; display:none;"></div>
+    </div>
+
+    <!-- Menu (hidden until student info saved) -->
+    <div id="menuArea" style="display:none;">
+
+        <!-- เนื้อหา -->
+        <div class="menu-section">
+            <div class="menu-section-title">📖 เนื้อหารายวิชา</div>
+            <div class="menu-grid">
+                <div class="menu-card content" onclick="showSection('content1')">
+                    <div class="icon">📖</div>
+                    <div class="label">เนื้อหา บทที่ 1</div>
+                </div>
+                <div class="menu-card content" onclick="showSection('content2')">
+                    <div class="icon">📖</div>
+                    <div class="label">เนื้อหา บทที่ 2</div>
+                </div>
+                <div class="menu-card content" onclick="showSection('content3')">
+                    <div class="icon">📖</div>
+                    <div class="label">เนื้อหา บทที่ 3</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- งานสมุด -->
+        <div class="menu-section">
+            <div class="menu-section-title">📓 งานสมุด</div>
+            <div class="menu-grid">
+                <div class="menu-card notebook" onclick="showSection('notebook1')">
+                    <div class="icon">📓</div>
+                    <div class="label">งานสมุด 1</div>
+                </div>
+                <div class="menu-card notebook" onclick="showSection('notebook2')">
+                    <div class="icon">📓</div>
+                    <div class="label">งานสมุด 2</div>
+                </div>
+                <div class="menu-card notebook" onclick="showSection('notebook3')">
+                    <div class="icon">📓</div>
+                    <div class="label">งานสมุด 3</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- แบบทดสอบ -->
+        <div class="menu-section">
+            <div class="menu-section-title">✏️ แบบทดสอบหลังเรียน</div>
+            <div class="menu-grid">
+                <div class="menu-card quiz" onclick="showSection('quiz1')">
+                    <div class="icon">✏️</div>
+                    <div class="label">แบบทดสอบ บทที่ 1</div>
+                </div>
+                <div class="menu-card quiz" onclick="showSection('quiz2')">
+                    <div class="icon">✏️</div>
+                    <div class="label">แบบทดสอบ บทที่ 2</div>
+                </div>
+                <div class="menu-card quiz" onclick="showSection('quiz3')">
+                    <div class="icon">✏️</div>
+                    <div class="label">แบบทดสอบ บทที่ 3</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ข้อความถึงคุณครู -->
+        <div class="menu-section">
+            <div class="menu-section-title">💌 อื่น ๆ</div>
+            <div class="menu-grid">
+                <div class="menu-card message" onclick="showSection('messageTeacher')">
+                    <div class="icon">💌</div>
+                    <div class="label">ข้อความถึงคุณครู</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Content 1 -->
+    <div class="section-panel" id="section-content1">
+        <h2>📖 เนื้อหา บทที่ 1</h2>
+        <div style="text-align:center; padding:30px 10px;">
+            <div style="font-size:3rem; margin-bottom:16px;">📂</div>
+            <p style="color:#555; margin-bottom:20px;">กดปุ่มด้านล่างเพื่อเปิดเอกสารเนื้อหา บทที่ 1</p>
+            <a href="https://drive.google.com/drive/folders/1QWvexmeK9aVFZggDLrwL4h8n4OGL7uzn?usp=sharing" target="_blank" style="display:inline-block; background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:14px 36px; border-radius:30px; text-decoration:none; font-size:1.05rem; font-weight:600;">📖 เปิดเนื้อหา บทที่ 1</a>
+        </div>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Content 2 -->
+    <div class="section-panel" id="section-content2">
+        <h2>📖 เนื้อหา บทที่ 2</h2>
+        <div style="text-align:center; padding:30px 10px;">
+            <div style="font-size:3rem; margin-bottom:16px;">📂</div>
+            <p style="color:#555; margin-bottom:20px;">กดปุ่มด้านล่างเพื่อเปิดเอกสารเนื้อหา บทที่ 2</p>
+            <a href="https://drive.google.com/drive/folders/141dMIEbaV0wJAoRNNDMfUS9xvnSvyDWo?usp=sharing" target="_blank" style="display:inline-block; background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:14px 36px; border-radius:30px; text-decoration:none; font-size:1.05rem; font-weight:600;">📖 เปิดเนื้อหา บทที่ 2</a>
+        </div>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Content 3 -->
+    <div class="section-panel" id="section-content3">
+        <h2>📖 เนื้อหา บทที่ 3</h2>
+        <div style="text-align:center; padding:30px 10px;">
+            <div style="font-size:3rem; margin-bottom:16px;">📂</div>
+            <p style="color:#555; margin-bottom:20px;">กดปุ่มด้านล่างเพื่อเปิดเอกสารเนื้อหา บทที่ 3</p>
+            <a href="https://drive.google.com/drive/folders/18Dvu-cQbWRV5AsxpLzj-QtSCdbBaZuq5?usp=sharing" target="_blank" style="display:inline-block; background:linear-gradient(135deg,#667eea,#764ba2); color:white; padding:14px 36px; border-radius:30px; text-decoration:none; font-size:1.05rem; font-weight:600;">📖 เปิดเนื้อหา บทที่ 3</a>
+        </div>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Notebook 1 -->
+    <div class="section-panel" id="section-notebook1">
+        <h2>📓 งานสมุด 1</h2>
+        <div class="situation">
+            <strong>สถานการณ์:</strong> ปัญหาลืมปิดน้ำภายในบ้านเกิดขึ้นได้จากการหลงลืม อาจส่งผลกระทบในหลายด้าน เช่น ค่าน้ำราคาสูงขึ้น สิ้นเปลืองทรัพยากรน้ำโดยเปล่าประโยชน์
+        </div>
+        <div class="situation">
+            <strong>โจทย์:</strong> จากปัญหาดังกล่าว นักเรียนคิดว่าจะพัฒนาโครงงานประเภทใด และมีแนวทางการพัฒนาอย่างไร
+        </div>
+        <textarea id="answer-notebook1" placeholder="พิมพ์คำตอบของนักเรียนที่นี่..."></textarea>
+        <button class="submit-btn" onclick="submitNotebook('notebook1')">📤 ส่งงานสมุด 1</button>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Notebook 2 -->
+    <div class="section-panel" id="section-notebook2">
+        <h2>📓 งานสมุด 2</h2>
+        <div class="situation">
+            <strong>สถานการณ์:</strong> ในช่วงฤดูฝนของทุกปี ชาวนามักพบเจอปัญหาน้ำท่วมขังในนาข้าว ทำให้ข้าวเน่าตายเกิดความเสียหายอย่างมาก
+        </div>
+        <div class="situation">
+            <strong>โจทย์:</strong> นักเรียนคิดว่าควรออกแบบและเลือกใช้เทคโนโลยีใดเพื่อแก้ปัญหาดังกล่าว
+        </div>
+        <textarea id="answer-notebook2" placeholder="พิมพ์คำตอบของนักเรียนที่นี่..."></textarea>
+        <button class="submit-btn" onclick="submitNotebook('notebook2')">📤 ส่งงานสมุด 2</button>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Notebook 3 -->
+    <div class="section-panel" id="section-notebook3">
+        <h2>📓 งานสมุด 3</h2>
+        <div class="situation">
+            <strong>สถานการณ์:</strong> ปัญหาการวนหาที่จอดรถในห้างสรรพสินค้า บางวันมีผู้ใช้บริการจำนวนมากทำให้หาที่จอดรถยาก เสียเวลาในการขับเพื่อวนหาที่จอดรถ
+        </div>
+        <div class="situation">
+            <strong>โจทย์:</strong> นักเรียนคิดว่าควรพัฒนาออกแบบเทคโนโลยีใด เพื่อแก้ปัญหาดังกล่าว
+        </div>
+        <textarea id="answer-notebook3" placeholder="พิมพ์คำตอบของนักเรียนที่นี่..."></textarea>
+        <button class="submit-btn" onclick="submitNotebook('notebook3')">📤 ส่งงานสมุด 3</button>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Quiz 1 -->
+    <div class="section-panel" id="section-quiz1">
+        <h2>✏️ แบบทดสอบหลังเรียน หน่วยที่ 1</h2>
+        <div class="quiz-intro" id="quizIntro-quiz1">
+            <div class="info-list">
+                📋 จำนวนข้อ: <strong>10 ข้อ</strong><br>
+                ⏱ เวลาในการทำ: <strong>15 นาที</strong><br>
+                📌 เมื่อกดเริ่มแล้วจะเริ่มจับเวลาทันที<br>
+                📌 เมื่อหมดเวลาระบบจะส่งคำตอบให้อัตโนมัติ
+            </div>
+            <button class="start-quiz-btn" onclick="beginQuiz('quiz1')">🚀 เริ่มทำแบบทดสอบ</button>
+        </div>
+        <div id="quizContent-quiz1" style="display:none;">
+            <div class="timer-text" id="timer-quiz1">⏱ เวลาคงเหลือ: 15:00</div>
+            <div class="timer-bar"><div class="fill" id="timerFill-quiz1" style="width:100%"></div></div>
+            <div id="quizBody-quiz1"></div>
+            <button class="submit-btn" id="submitBtn-quiz1" onclick="submitQuiz('quiz1')">📤 ส่งแบบทดสอบ</button>
+            <div class="quiz-result" id="result-quiz1" style="display:none">
+                <div class="score-label">คะแนนที่ได้</div>
+                <div class="score" id="score-quiz1">0/10</div>
+                <p id="scorePct-quiz1" style="color:#888;margin-top:8px;"></p>
+            </div>
+        </div>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Quiz 2 -->
+    <div class="section-panel" id="section-quiz2">
+        <h2>✏️ แบบทดสอบหลังเรียน หน่วยที่ 2</h2>
+        <div class="quiz-intro" id="quizIntro-quiz2">
+            <div class="info-list">
+                📋 จำนวนข้อ: <strong>10 ข้อ</strong><br>
+                ⏱ เวลาในการทำ: <strong>15 นาที</strong><br>
+                📌 เมื่อกดเริ่มแล้วจะเริ่มจับเวลาทันที<br>
+                📌 เมื่อหมดเวลาระบบจะส่งคำตอบให้อัตโนมัติ
+            </div>
+            <button class="start-quiz-btn" onclick="beginQuiz('quiz2')">🚀 เริ่มทำแบบทดสอบ</button>
+        </div>
+        <div id="quizContent-quiz2" style="display:none;">
+            <div class="timer-text" id="timer-quiz2">⏱ เวลาคงเหลือ: 15:00</div>
+            <div class="timer-bar"><div class="fill" id="timerFill-quiz2" style="width:100%"></div></div>
+            <div id="quizBody-quiz2"></div>
+            <button class="submit-btn" id="submitBtn-quiz2" onclick="submitQuiz('quiz2')">📤 ส่งแบบทดสอบ</button>
+            <div class="quiz-result" id="result-quiz2" style="display:none">
+                <div class="score-label">คะแนนที่ได้</div>
+                <div class="score" id="score-quiz2">0/10</div>
+                <p id="scorePct-quiz2" style="color:#888;margin-top:8px;"></p>
+            </div>
+        </div>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Quiz 3 -->
+    <div class="section-panel" id="section-quiz3">
+        <h2>✏️ แบบทดสอบหลังเรียน หน่วยที่ 3</h2>
+        <div class="quiz-intro" id="quizIntro-quiz3">
+            <div class="info-list">
+                📋 จำนวนข้อ: <strong>10 ข้อ</strong><br>
+                ⏱ เวลาในการทำ: <strong>15 นาที</strong><br>
+                📌 เมื่อกดเริ่มแล้วจะเริ่มจับเวลาทันที<br>
+                📌 เมื่อหมดเวลาระบบจะส่งคำตอบให้อัตโนมัติ
+            </div>
+            <button class="start-quiz-btn" onclick="beginQuiz('quiz3')">🚀 เริ่มทำแบบทดสอบ</button>
+        </div>
+        <div id="quizContent-quiz3" style="display:none;">
+            <div class="timer-text" id="timer-quiz3">⏱ เวลาคงเหลือ: 15:00</div>
+            <div class="timer-bar"><div class="fill" id="timerFill-quiz3" style="width:100%"></div></div>
+            <div id="quizBody-quiz3"></div>
+            <button class="submit-btn" id="submitBtn-quiz3" onclick="submitQuiz('quiz3')">📤 ส่งแบบทดสอบ</button>
+            <div class="quiz-result" id="result-quiz3" style="display:none">
+                <div class="score-label">คะแนนที่ได้</div>
+                <div class="score" id="score-quiz3">0/10</div>
+                <p id="scorePct-quiz3" style="color:#888;margin-top:8px;"></p>
+            </div>
+        </div>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+    <!-- Message to Teacher -->
+    <div class="section-panel" id="section-messageTeacher">
+        <h2>💌 ข้อความถึงคุณครู</h2>
+        <p style="color:#888; margin-bottom:14px;">อยากบอกอะไรคุณครู พิมพ์ได้เลยนะจ๊ะ 😊</p>
+        <textarea id="messageText" placeholder="พิมพ์ข้อความถึงคุณครูที่นี่..." style="min-height:150px;"></textarea>
+        <button class="submit-btn" onclick="submitMessage()">📤 ส่งข้อความ</button>
+        <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
+    </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+// Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyDE-xni-_9aF1dsjj0w7V5UPMV5wv2GL8U",
+    authDomain: "test-a7bac.firebaseapp.com",
+    projectId: "test-a7bac",
+    storageBucket: "test-a7bac.firebasestorage.app",
+    messagingSenderId: "223746479746",
+    appId: "1:223746479746:web:f55e01d30c558a17af469b"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Student
+let studentData = { name: '', classroom: '', number: '' };
+
+function saveStudentInfo() {
+    const name = document.getElementById('studentName').value.trim();
+    const cls = document.getElementById('studentClass').value;
+    const num = document.getElementById('studentNumber').value.trim();
+    if (!name || !cls || !num) { showToast('กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
+    studentData = { name, classroom: cls, number: parseInt(num) };
+    localStorage.setItem('studentData', JSON.stringify(studentData));
+    document.getElementById('savedInfo').style.display = 'block';
+    document.getElementById('savedInfo').textContent = '✅ บันทึกแล้ว: ' + name + ' ' + cls + ' เลขที่ ' + num;
+    document.getElementById('menuArea').style.display = 'block';
+    showToast('บันทึกข้อมูลเรียบร้อย!');
+}
+
+function loadStudentInfo() {
+    const saved = localStorage.getItem('studentData');
+    if (saved) {
+        studentData = JSON.parse(saved);
+        document.getElementById('studentName').value = studentData.name;
+        document.getElementById('studentClass').value = studentData.classroom;
+        document.getElementById('studentNumber').value = studentData.number;
+        document.getElementById('savedInfo').style.display = 'block';
+        document.getElementById('savedInfo').textContent = '✅ ' + studentData.name + ' ' + studentData.classroom + ' เลขที่ ' + studentData.number;
+        document.getElementById('menuArea').style.display = 'block';
+    }
+}
+
+function checkStudent() {
+    if (!studentData.name || !studentData.classroom || !studentData.number) {
+        showToast('กรุณากรอกข้อมูลนักเรียนก่อน');
+        document.getElementById('studentName').focus();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return false;
+    }
+    return true;
+}
+
+// Popup
+function closePopup() { document.getElementById('welcomePopup').style.display = 'none'; }
+
+// Navigation
+function showSection(id) {
+    document.querySelectorAll('.section-panel').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('menuArea').style.display = 'none';
+    document.getElementById('section-' + id).classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goBack() {
+    document.querySelectorAll('.section-panel').forEach(function(el) { el.classList.remove('active'); });
+    document.getElementById('menuArea').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Begin Quiz (show questions + start timer)
+function beginQuiz(quizId) {
+    document.getElementById('quizIntro-' + quizId).style.display = 'none';
+    document.getElementById('quizContent-' + quizId).style.display = 'block';
+    if (!quizTimers[quizId]) { startQuizTimer(quizId); }
+}
+
+// Toast
+function showToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.display = 'block';
+    setTimeout(function() { t.style.display = 'none'; }, 3000);
+}
+
+// Submit Notebook
+async function submitNotebook(id) {
+    if (!checkStudent()) return;
+    var answer = document.getElementById('answer-' + id).value.trim();
+    if (!answer) { showToast('กรุณาพิมพ์คำตอบก่อนส่ง'); return; }
+    try {
+        await db.collection('submissions').add({
+            type: id,
+            name: studentData.name,
+            classroom: studentData.classroom,
+            number: studentData.number,
+            answer: answer,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('ส่งงานเรียบร้อยแล้ว!');
+        document.getElementById('answer-' + id).value = '';
+    } catch(e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message);
+    }
+}
+
+// Submit Message
+async function submitMessage() {
+    if (!checkStudent()) return;
+    var msg = document.getElementById('messageText').value.trim();
+    if (!msg) { showToast('กรุณาพิมพ์ข้อความก่อนส่ง'); return; }
+    try {
+        await db.collection('submissions').add({
+            type: 'message',
+            name: studentData.name,
+            classroom: studentData.classroom,
+            number: studentData.number,
+            answer: msg,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('ส่งข้อความถึงคุณครูเรียบร้อยแล้ว!');
+        document.getElementById('messageText').value = '';
+    } catch(e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message);
+    }
+}
+
+// ============ QUIZ DATA ============
+var quizData = {
+    quiz1: [
+        { q: '1. ข้อใดกล่าวไม่ถูกต้องเกี่ยวกับลักษณะของโครงงาน', opts: ['ก. มีเป้าหมายและขั้นตอนที่ชัดเจน', 'ข. ต้องใช้ความรู้ ทักษะ และความพยายาม', 'ค. เป็นการแข่งขันกับผู้อื่นเพื่อให้ได้ผลงานที่ดีที่สุด', 'ง. เป็นงานที่ต้องมีการศึกษาค้นคว้าและสร้างสรรค์ผลงาน'], ans: 2 },
+        { q: '2. โครงงานควรมีการวางแผนและดำเนินงานอย่างไร', opts: ['ก. ทำตามความรู้สึกและปรับเปลี่ยนตลอดเวลา', 'ข. ทำไปเรื่อย ๆ โดยไม่มีกรอบหรือขั้นตอนชัดเจน', 'ค. ดำเนินการแบบสุ่มเพื่อกระตุ้นความคิดสร้างสรรค์', 'ง. วางแผน กำหนดเป้าหมาย ขอบเขต และขั้นตอนอย่างเป็นระบบ'], ans: 3 },
+        { q: '3. โครงงานแตกต่างจากงานทั่วไปอย่างไร', opts: ['ก. เป็นงานเล็กที่ใช้เวลาน้อยและไม่ต้องอาศัยทีมงาน', 'ข. เป็นงานที่มีขั้นตอนตายตัว ไม่ต้องคิดวิเคราะห์', 'ค. เป็นงานที่ต้องใช้ทักษะการคิดวิเคราะห์ การทำงานเป็นทีม และการแก้ปัญหา', 'ง. เป็นงานที่สามารถทำซ้ำได้แบบเดิมโดยไม่ต้องปรับปรุง'], ans: 2 },
+        { q: '4. โครงงานวิทยาศาสตร์มุ่งเน้นวัตถุประสงค์ใดเป็นหลัก', opts: ['ก. เพื่อให้ผู้เรียนได้ฝึกฝนการจัดนิทรรศการ', 'ข. เพื่อพัฒนาทักษะการเขียนรายงานทั่วไป', 'ค. เพื่อให้ผู้เรียนได้แสดงความสามารถทางศิลปะ', 'ง. เพื่อค้นหาคำตอบหรือสร้างองค์ความรู้ใหม่ทางวิทยาศาสตร์'], ans: 3 },
+        { q: '5. ข้อใดเป็นตัวอย่างของโครงงานทางคณิตศาสตร์', opts: ['ก. การศึกษาความสัมพันธ์ระหว่างปริมาณในรูปแบบสมการทางพีชคณิต', 'ข. การออกแบบเครื่องมือทางวิทยาศาสตร์เพื่อทดลองในห้องปฏิบัติการ', 'ค. การศึกษาพฤติกรรมของสิ่งมีชีวิตในธรรมชาติ', 'ง. การสร้างภาพยนตร์หรือภาพนิ่งเพื่อความบันเทิง'], ans: 0 },
+        { q: '6. ความรู้ด้านใดไม่จำเป็นในการพัฒนาโครงงานคอมพิวเตอร์', opts: ['ก. การเขียนโปรแกรม', 'ข. การวิเคราะห์และออกแบบระบบ', 'ค. ความรู้ด้านฮาร์ดแวร์และระบบเครือข่าย', 'ง. ความรู้เกี่ยวกับธรรมชาติ'], ans: 3 },
+        { q: '7. วงจรการพัฒนาระบบ (SDLC) ถูกนำมาใช้เพื่ออะไร', opts: ['ก. เพื่อสร้างหลักสูตรการศึกษาใหม่', 'ข. เพื่อพัฒนาโปรแกรมซอฟต์แวร์อย่างมีระบบและมาตรฐาน', 'ค. เพื่อทำการทดลองทางวิทยาศาสตร์', 'ง. เพื่อวิเคราะห์ข้อมูลทางสถิติ'], ans: 1 },
+        { q: '8. โครงงานสิ่งประดิษฐ์มีการค้นคว้าเกี่ยวกับอะไรบ้าง', opts: ['ก. เศรษฐกิจและสังคม', 'ข. เทคโนโลยี วัสดุ หลักการทำงาน และผลงานวิจัยที่เกี่ยวข้อง', 'ค. แนวทางการพัฒนานโยบายสาธารณะ', 'ง. กระบวนการทางกฎหมายและข้อบังคับ'], ans: 1 },
+        { q: '9. สะเต็มศึกษาช่วยพัฒนาทักษะใดของผู้เรียนในศตวรรษที่ 21', opts: ['ก. ทักษะการทำงานร่วมกัน การสื่อสาร การคิดวิจารณญาณ และการคิดสร้างสรรค์', 'ข. ทักษะในการเขียนโปรแกรมและการออกแบบเว็บไซต์', 'ค. ทักษะการจัดการเงินและการลงทุน', 'ง. ทักษะการเจรจาต่อรองและการสร้างความสัมพันธ์'], ans: 0 },
+        { q: '10. การบูรณาการแบบสหวิทยาการมีลักษณะสำคัญอย่างไร', opts: ['ก. นักเรียนเรียนเนื้อหาและทักษะของวิชาต่าง ๆ แยกจากกัน', 'ข. ครูทำงานร่วมกันเพื่อออกแบบกิจกรรมที่เชื่อมโยงวิชาอื่น ๆ ผ่านเนื้อหาหรือตัวชี้วัด', 'ค. นักเรียนต้องเรียนเฉพาะวิชาในแต่ละสาขาวิชา', 'ง. การเรียนรู้จะเน้นการศึกษาทางสังคมศาสตร์เท่านั้น'], ans: 1 }
+    ],
+    quiz2: [
+        { q: '1. ข้อใดไม่ใช่สิ่งที่ต้องคำนึงถึงในการออกแบบผลิตภัณฑ์', opts: ['ก. ความสวยงาม', 'ข. ประสิทธิภาพ', 'ค. ความปลอดภัย', 'ง. การโฆษณาประชาสัมพันธ์'], ans: 3 },
+        { q: '2. ข้อใดไม่ใช่องค์ประกอบของประสบการณ์ที่ดีในการใช้บริการ', opts: ['ก. ประสิทธิภาพ', 'ข. ความสะดวกสบาย', 'ค. ความประทับใจ', 'ง. ความซับซ้อนของกระบวนการ'], ans: 3 },
+        { q: '3. เครื่องมือใดที่ช่วยในการออกแบบบริการ', opts: ['ก. SWOT Analysis', 'ข. Business Model Canvas', 'ค. Customer Journey Mapping', 'ง. Marketing Mix'], ans: 2 },
+        { q: '4. ข้อใดหมายถึงการออกแบบส่วนติดต่อผู้ใช้ (User Interface)', opts: ['ก. การจัดโครงสร้างเนื้อหาและออกแบบจำลองหน้าจอเบื้องต้น', 'ข. ความง่าย สะดวก และน่าดึงดูดในการใช้งาน', 'ค. ออกแบบรายละเอียดบนหน้าจอ ปุ่มกด ไอคอน ให้มีประสิทธิภาพและสวยงาม', 'ง. วางแผนและออกแบบประสบการณ์โดยรวมในการใช้งาน'], ans: 1 },
+        { q: '5. อินเทอร์เน็ตของสรรพสิ่ง (IoT) ในภาคอุตสาหกรรม ช่วยในเรื่องใด', opts: ['ก. เชื่อมโยงอุปกรณ์และเก็บข้อมูลการผลิตแบบเรียลไทม์', 'ข. สร้างแบบจำลองผลิตภัณฑ์ก่อนสร้างจริง', 'ค. ลดการเชื่อมต่อระหว่างเครื่องจักร', 'ง. เพิ่มการทำงานแบบโดยใช้แรงงานมนุษย์'], ans: 0 },
+        { q: '6. เหตุใดการตั้งข้อจำกัดจึงมีความสำคัญในการแก้ปัญหา', opts: ['ก. เพื่อเพิ่มจำนวนทางเลือกในการแก้ปัญหา', 'ข. เพื่อกำหนดกรอบการแก้ไขให้เหมาะสมกับสถานการณ์จริง', 'ค. เพื่อทำให้ปัญหายากขึ้น', 'ง. เพื่อเลื่อนการแก้ไขปัญหาออกไป'], ans: 1 },
+        { q: '7. หากไม่ระบุผู้รับผิดชอบอย่างชัดเจน อาจส่งผลเสียอย่างไร', opts: ['ก. การบริหารทรัพยากรจะทำได้ง่ายขึ้น', 'ข. ไม่สามารถติดตามและประเมินผลการดำเนินงานได้อย่างมีประสิทธิภาพ', 'ค. ลดภาระงานในการติดตามงานของทีม', 'ง. กิจกรรมจะดำเนินไปได้รวดเร็วขึ้น'], ans: 1 },
+        { q: '8. วงจร PDCA ใช้เพื่ออะไร', opts: ['ก. เพื่อทำให้การทำงานเป็นไปอย่างรวดเร็วโดยไม่ต้องวิเคราะห์', 'ข. เพื่อพัฒนาคุณภาพและประสิทธิภาพในการทำงานอย่างต่อเนื่อง', 'ค. เพื่อให้ทำงานเป็นระยะ ๆ โดยไม่ต้องปรับปรุง', 'ง. เพื่อให้มีการปรับปรุงแค่ครั้งเดียวในปี'], ans: 1 },
+        { q: '9. สิ่งสำคัญที่สุดในการนำเสนอวิธีการแก้ปัญหาอย่างมีประสิทธิภาพคือข้อใด', opts: ['ก. การใช้ภาษาทางการที่ซับซ้อน', 'ข. การทำให้ผู้มีส่วนเกี่ยวข้องเข้าใจและสนับสนุนแนวทางแก้ปัญหา', 'ค. การใช้เทคนิคกดดันเพื่อให้ยอมรับแนวทาง', 'ง. การนำเสนอเฉพาะแนวทางแก้ปัญหาโดยไม่กล่าวถึงปัญหา'], ans: 1 },
+        { q: '10. ข้อใดคือโครงงานที่เกี่ยวข้องกับสะเต็มศึกษา (STEM Project)', opts: ['ก. การสร้างโปรแกรมสำหรับแก้ปัญหาเชิงเส้นตรง', 'ข. การศึกษาและทดลองเกี่ยวกับพลังงานทดแทน', 'ค. การพัฒนาระบบรดน้ำต้นไม้อัตโนมัติโดยใช้ไมโครคอนโทรลเลอร์', 'ง. การวิเคราะห์และจำลองสมการคลื่นไซน์'], ans: 0 }
+    ],
+    quiz3: [
+        { q: '1. จุดประสงค์หลักของการนำแนวคิดเชิงวิศวกรรมมาประยุกต์ใช้ในชีวิตประจำวันคือข้อใด', opts: ['ก. เพื่อความสวยงามของที่พักอาศัย', 'ข. เพื่อสร้างสิ่งประดิษฐ์ที่ช่วยให้ชีวิตสะดวกและปลอดภัยมากขึ้น', 'ค. เพื่อลดจำนวนการใช้เทคโนโลยีในอนาคต', 'ง. เพื่อการแข่งขันทางธุรกิจเพียงอย่างเดียว'], ans: 1 },
+        { q: '2. ระบบแจ้งเตือนแผ่นดินไหวล่วงหน้าทำงานโดยอาศัยอุปกรณ์หลักในข้อใด', opts: ['ก. กล้องถ่ายภาพความละเอียดสูง', 'ข. เซนเซอร์ตรวจจับความสั่นสะเทือนของพื้นดิน', 'ค. เครื่องวัดอุณหภูมิและความชื้น', 'ง. ระบบดาวเทียมส่องกราด'], ans: 1 },
+        { q: '3. ประโยชน์ที่สำคัญที่สุดของระบบแจ้งเตือนภัยล่วงหน้าคืออะไร', opts: ['ก. เพื่อบันทึกสถิติความเสียหาย', 'ข. เพื่อช่วยให้ภาครัฐเก็บข้อมูลประชากร', 'ค. เพื่อให้ประชาชนมีเวลาเตรียมตัวและอพยพได้ทันเวลา', 'ง. เพื่อยับยั้งการเกิดภัยธรรมชาติ'], ans: 2 },
+        { q: '4. การพัฒนาระบบแจ้งเตือนน้ำท่วมใช้ข้อมูลจากส่วนใดบ้าง', opts: ['ก. ระดับน้ำและปริมาณน้ำฝน', 'ข. ความเร็วลมและความกดอากาศ', 'ค. กระแสน้ำในมหาสมุทร', 'ง. อุณหภูมิของผิวดิน'], ans: 0 },
+        { q: '5. ระบบตรวจวัดคุณภาพน้ำแบบเรียลไทม์ในฟาร์มเลี้ยงกุ้ง ช่วยอำนวยความสะดวกในเรื่องใด', opts: ['ก. การให้อาหารกุ้งตามเวลา', 'ข. การควบคุมการเปิด-ปิด เครื่องเติมอากาศอัตโนมัติ', 'ค. การนับจำนวนกุ้งในบ่อ', 'ง. การทำความสะอาดบ่อเลี้ยง'], ans: 1 },
+        { q: '6. เทคโนโลยีฟาร์มเกษตรอัจฉริยะ (Smart Farm) มุ่งเน้นการควบคุมปัจจัยใด', opts: ['ก. ปริมาณวัชพืชและแมลง', 'ข. สีของใบพืชและขนาดของลำต้น', 'ค. อุณหภูมิ ความชื้น แสงสว่าง และการให้น้ำ', 'ง. ชนิดของดินและปุ๋ยเคมี'], ans: 2 },
+        { q: '7. ข้อใดคือผลลัพธ์ที่ได้จากการใช้ระบบฟาร์มเกษตรอัจฉริยะ', opts: ['ก. พืชต้องการเวลาเจริญเติบโตนานขึ้น', 'ข. ต้องใช้แรงงานคนมากขึ้น', 'ค. เพิ่มผลผลิตและลดการใช้ทรัพยากรอย่างคุ้มค่า', 'ง. ทำให้พืชมีสายพันธุ์ใหม่ที่แปลกตา'], ans: 2 },
+        { q: '8. ระบบจราจรขนส่งอัจฉริยะ (ITS) มีวัตถุประสงค์เพื่ออะไร', opts: ['ก. เพื่อการจัดเก็บภาษีรถยนต์', 'ข. เพื่อลดความแออัด ลดอุบัติเหตุ และเพิ่มประสิทธิภาพการเดินทาง', 'ค. เพื่อบังคับให้ทุกคนใช้รถสาธารณะ', 'ง. เพื่อเพิ่มความเร็วของรถยนต์ให้สูงสุด'], ans: 1 },
+        { q: '9. การทำงานร่วมกันระหว่างเซนเซอร์และการสื่อสารข้อมูลแบบทันที เรียกว่าอะไร', opts: ['ก. การประมวลผลแบบเรียลไทม์ (Real-time)', 'ข. การประมวลผลแบบย้อนหลัง (Offline)', 'ค. การประมวลผลแบบแมนนวล (Manual)', 'ง. การประมวลผลเชิงประวัติศาสตร์'], ans: 0 },
+        { q: '10. การทำโครงงานออกแบบและเทคโนโลยีช่วยพัฒนาทักษะใดของผู้เรียนมากที่สุด', opts: ['ก. ทักษะการวาดภาพเหมือน', 'ข. ทักษะการจำหน่ายสินค้า', 'ค. ทักษะการคิดวิเคราะห์และการทำงานร่วมกันเป็นกลุ่ม', 'ง. ทักษะการอ่านทำนองเสนาะ'], ans: 2 }
+    ]
+};
+
+// Quiz state
+var quizTimers = {};
+var quizAnswers = { quiz1: {}, quiz2: {}, quiz3: {} };
+var quizSubmitted = { quiz1: false, quiz2: false, quiz3: false };
+
+function renderQuiz(quizId) {
+    var container = document.getElementById('quizBody-' + quizId);
+    var questions = quizData[quizId];
+    var html = '';
+    questions.forEach(function(item, qi) {
+        html += '<div class="quiz-question"><p>' + item.q + '</p>';
+        item.opts.forEach(function(opt, oi) {
+            html += '<div class="quiz-option" id="opt-' + quizId + '-' + qi + '-' + oi + '" onclick="selectOption(\'' + quizId + '\',' + qi + ',' + oi + ')">' + opt + '</div>';
+        });
+        html += '</div>';
+    });
+    container.innerHTML = html;
+}
+
+function selectOption(quizId, qi, oi) {
+    if (quizSubmitted[quizId]) return;
+    for (var i = 0; i < 4; i++) {
+        document.getElementById('opt-' + quizId + '-' + qi + '-' + i).classList.remove('selected');
+    }
+    document.getElementById('opt-' + quizId + '-' + qi + '-' + oi).classList.add('selected');
+    quizAnswers[quizId][qi] = oi;
+}
+
+function startQuizTimer(quizId) {
+    var timeLeft = 15 * 60;
+    var totalTime = timeLeft;
+    var timerEl = document.getElementById('timer-' + quizId);
+    var fillEl = document.getElementById('timerFill-' + quizId);
+
+    quizTimers[quizId] = setInterval(function() {
+        timeLeft--;
+        var mins = Math.floor(timeLeft / 60);
+        var secs = timeLeft % 60;
+        timerEl.textContent = '⏱ เวลาคงเหลือ: ' + String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+        var pct = (timeLeft / totalTime) * 100;
+        fillEl.style.width = pct + '%';
+        if (pct < 20) fillEl.classList.add('warning');
+        if (timeLeft <= 0) {
+            clearInterval(quizTimers[quizId]);
+            timerEl.textContent = '⏱ หมดเวลา!';
+            submitQuiz(quizId);
+        }
+    }, 1000);
+}
+
+async function submitQuiz(quizId) {
+    if (quizSubmitted[quizId]) return;
+    if (!checkStudent()) return;
+
+    quizSubmitted[quizId] = true;
+    if (quizTimers[quizId]) clearInterval(quizTimers[quizId]);
+
+    var questions = quizData[quizId];
+    var score = 0;
+    var answers = quizAnswers[quizId];
+
+    questions.forEach(function(item, qi) {
+        var selected = answers[qi];
+        var correct = item.ans;
+        for (var i = 0; i < 4; i++) {
+            var el = document.getElementById('opt-' + quizId + '-' + qi + '-' + i);
+            el.style.pointerEvents = 'none';
+            if (i === correct) el.classList.add('correct');
+            if (selected === i && i !== correct) el.classList.add('wrong');
+        }
+        if (selected === correct) score++;
+    });
+
+    document.getElementById('submitBtn-' + quizId).style.display = 'none';
+    var resultEl = document.getElementById('result-' + quizId);
+    resultEl.style.display = 'block';
+    document.getElementById('score-' + quizId).textContent = score + '/10';
+    document.getElementById('scorePct-' + quizId).textContent = 'คิดเป็น ' + (score * 10) + '%';
+
+    try {
+        await db.collection('submissions').add({
+            type: quizId,
+            name: studentData.name,
+            classroom: studentData.classroom,
+            number: studentData.number,
+            score: score,
+            totalQuestions: 10,
+            answers: answers,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        showToast('ส่งแบบทดสอบเรียบร้อย! ได้ ' + score + '/10 คะแนน');
+    } catch(e) {
+        showToast('เกิดข้อผิดพลาด: ' + e.message);
+    }
+}
+
+// Init
+document.addEventListener('DOMContentLoaded', function() {
+    loadStudentInfo();
+    renderQuiz('quiz1');
+    renderQuiz('quiz2');
+    renderQuiz('quiz3');
+});
+</script>
+</body>
+</html>

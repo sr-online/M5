@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - ตรวจงานนักเรียน ม.5</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Sarabun', 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; min-height: 100vh; }
+
+        /* Login */
+        .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); z-index: 1000; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; border-radius: 20px; padding: 40px 30px; max-width: 400px; width: 90%; text-align: center; }
+        .login-box h2 { color: #764ba2; margin-bottom: 20px; }
+        .login-box input { width: 100%; padding: 12px 16px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem; margin-bottom: 14px; }
+        .login-box input:focus { border-color: #764ba2; outline: none; }
+        .login-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px; width: 100%; border-radius: 10px; font-size: 1.1rem; cursor: pointer; }
+        .login-error { color: #f5576c; margin-top: 10px; display: none; }
+
+        /* Header */
+        .header { background: white; padding: 16px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+        .header h1 { color: #764ba2; font-size: 1.3rem; }
+        .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        /* Filters */
+        .filters { background: white; border-radius: 14px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .filters select, .filters input { padding: 10px 14px; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 0.95rem; }
+        .filters select:focus, .filters input:focus { border-color: #764ba2; outline: none; }
+        .filter-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; }
+        .refresh-btn { background: #43e97b; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 0.95rem; }
+
+        /* Stats */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; margin-bottom: 20px; }
+        .stat-card { background: white; border-radius: 14px; padding: 20px; text-align: center; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .stat-card .num { font-size: 2rem; font-weight: 800; color: #764ba2; }
+        .stat-card .label { color: #888; font-size: 0.85rem; margin-top: 4px; }
+
+        /* Tabs */
+        .tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab { padding: 10px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 0.9rem; color: #555; transition: all 0.2s; }
+        .tab.active { background: #764ba2; color: white; border-color: #764ba2; }
+
+        /* Table */
+        .table-wrap { background: white; border-radius: 14px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th { background: #f8f4ff; color: #764ba2; padding: 14px 16px; text-align: left; font-size: 0.9rem; border-bottom: 2px solid #e8e0f0; white-space: nowrap; }
+        td { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; color: #444; }
+        tr:hover { background: #faf8ff; }
+        .score-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 0.85rem; }
+        .score-high { background: #e8fdf0; color: #2d8a56; }
+        .score-mid { background: #fff8e1; color: #f57f17; }
+        .score-low { background: #fde8eb; color: #c0392b; }
+        .answer-cell { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+        .answer-cell:hover { white-space: normal; overflow: visible; background: #f8f4ff; }
+
+        /* Empty */
+        .empty-state { text-align: center; padding: 60px 20px; color: #aaa; }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 10px; }
+
+        /* Modal */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 500; display: none; align-items: center; justify-content: center; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: white; border-radius: 16px; padding: 30px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto; }
+        .modal-box h3 { color: #764ba2; margin-bottom: 14px; }
+        .modal-box p { color: #444; line-height: 1.8; margin-bottom: 10px; }
+        .modal-close { background: #eee; border: none; padding: 8px 20px; border-radius: 8px; cursor: pointer; margin-top: 14px; }
+
+        /* Export */
+        .export-btn { background: #4facfe; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
+
+        @media (max-width: 768px) {
+            .header { flex-direction: column; align-items: flex-start; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .filters { flex-direction: column; }
+            .filters select, .filters input { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-overlay" id="loginOverlay">
+    <div class="login-box">
+        <h2>🔐 เข้าสู่ระบบ Admin</h2>
+        <p style="color:#888;margin-bottom:20px;">สำหรับคุณครูเท่านั้น</p>
+        <input type="password" id="adminPassword" placeholder="รหัสผ่าน" onkeypress="if(event.key==='Enter')adminLogin()">
+        <button class="login-btn" onclick="adminLogin()">เข้าสู่ระบบ</button>
+        <p class="login-error" id="loginError">รหัสผ่านไม่ถูกต้อง</p>
+    </div>
+</div>
+
+<!-- Header -->
+<div class="header" id="mainHeader" style="display:none;">
+    <h1>📊 Admin - ตรวจงานนักเรียน ม.5</h1>
+    <div class="header-actions">
+        <button class="export-btn" onclick="exportCSV()">📥 Export CSV</button>
+        <button class="refresh-btn" onclick="loadData()">🔄 รีเฟรช</button>
+        <button onclick="logout()" style="background:#f5576c;color:white;border:none;padding:10px 16px;border-radius:10px;cursor:pointer;">ออกจากระบบ</button>
+    </div>
+</div>
+
+<div class="container" id="mainContent" style="display:none;">
+
+    <!-- Stats -->
+    <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="num" id="totalSubmissions">0</div><div class="label">งานทั้งหมด</div></div>
+        <div class="stat-card"><div class="num" id="totalNotebook">0</div><div class="label">งานสมุด</div></div>
+        <div class="stat-card"><div class="num" id="totalQuiz">0</div><div class="label">แบบทดสอบ</div></div>
+        <div class="stat-card"><div class="num" id="totalMessage">0</div><div class="label">ข้อความ</div></div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters">
+        <select id="filterClass">
+            <option value="">ทุกห้อง</option>
+            <option value="ม.5/1">ม.5/1</option>
+            <option value="ม.5/2">ม.5/2</option>
+            <option value="ม.5/3">ม.5/3</option>
+            <option value="ม.5/4">ม.5/4</option>
+            <option value="ม.5/5">ม.5/5</option>
+            <option value="ม.5/6">ม.5/6</option>
+            <option value="ม.5/7">ม.5/7</option>
+            <option value="ม.5/8">ม.5/8</option>
+            <option value="ม.5/9">ม.5/9</option>
+        </select>
+        <select id="filterType">
+            <option value="">ทุกประเภท</option>
+            <option value="notebook1">งานสมุด 1</option>
+            <option value="notebook2">งานสมุด 2</option>
+            <option value="notebook3">งานสมุด 3</option>
+            <option value="quiz1">แบบทดสอบ บทที่ 1</option>
+            <option value="quiz2">แบบทดสอบ บทที่ 2</option>
+            <option value="quiz3">แบบทดสอบ บทที่ 3</option>
+            <option value="message">ข้อความถึงคุณครู</option>
+        </select>
+        <input type="text" id="filterName" placeholder="ค้นหาชื่อ...">
+        <button class="filter-btn" onclick="applyFilters()">🔍 ค้นหา</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs" id="classTabs">
+        <div class="tab active" onclick="switchClassTab('')">ทุกห้อง</div>
+        <div class="tab" onclick="switchClassTab('ม.5/1')">ม.5/1</div>
+        <div class="tab" onclick="switchClassTab('ม.5/2')">ม.5/2</div>
+        <div class="tab" onclick="switchClassTab('ม.5/3')">ม.5/3</div>
+        <div class="tab" onclick="switchClassTab('ม.5/4')">ม.5/4</div>
+        <div class="tab" onclick="switchClassTab('ม.5/5')">ม.5/5</div>
+        <div class="tab" onclick="switchClassTab('ม.5/6')">ม.5/6</div>
+        <div class="tab" onclick="switchClassTab('ม.5/7')">ม.5/7</div>
+        <div class="tab" onclick="switchClassTab('ม.5/8')">ม.5/8</div>
+        <div class="tab" onclick="switchClassTab('ม.5/9')">ม.5/9</div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>ชื่อ-นามสกุล</th>
+                    <th>ห้อง</th>
+                    <th>เลขที่</th>
+                    <th>ประเภทงาน</th>
+                    <th>คำตอบ / คะแนน</th>
+                    <th>วันเวลาส่ง</th>
+                </tr>
+            </thead>
+            <tbody id="dataTable">
+            </tbody>
+        </table>
+    </div>
+    <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="icon">📭</div>
+        <p>ยังไม่มีข้อมูล</p>
+    </div>
+</div>
+
+<!-- Answer Modal -->
+<div class="modal-overlay" id="answerModal">
+    <div class="modal-box">
+        <h3 id="modalTitle">คำตอบ</h3>
+        <p id="modalBody"></p>
+        <button class="modal-close" onclick="closeModal()">ปิด</button>
+    </div>
+</div>
+
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+// Firebase
+const firebaseConfig = {
+    apiKey: "AIzaSyDE-xni-_9aF1dsjj0w7V5UPMV5wv2GL8U",
+    authDomain: "test-a7bac.firebaseapp.com",
+    projectId: "test-a7bac",
+    storageBucket: "test-a7bac.firebasestorage.app",
+    messagingSenderId: "223746479746",
+    appId: "1:223746479746:web:f55e01d30c558a17af469b"
+};
+firebase.initializeApp(firebaseConfig);
+var db = firebase.firestore();
+
+// Admin password (simple check)
+var ADMIN_PASS = 'admin1234';
+
+var allData = [];
+var filteredData = [];
+
+function adminLogin() {
+    var pass = document.getElementById('adminPassword').value;
+    if (pass === ADMIN_PASS) {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainHeader').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'block';
+        sessionStorage.setItem('adminLoggedIn', 'true');
+        loadData();
+    } else {
+        document.getElementById('loginError').style.display = 'block';
+    }
+}
+
+function logout() {
+    sessionStorage.removeItem('adminLoggedIn');
+    location.reload();
+}
+
+// Type labels
+var typeLabels = {
+    notebook1: 'งานสมุด 1',
+    notebook2: 'งานสมุด 2',
+    notebook3: 'งานสมุด 3',
+    quiz1: 'แบบทดสอบ บทที่ 1',
+    quiz2: 'แบบทดสอบ บทที่ 2',
+    quiz3: 'แบบทดสอบ บทที่ 3',
+    message: 'ข้อความถึงคุณครู'
+};
+
+async function loadData() {
+    try {
+        var snapshot = await db.collection('submissions').orderBy('timestamp', 'desc').get();
+        allData = [];
+        snapshot.forEach(function(doc) {
+            allData.push({ id: doc.id, ...doc.data() });
+        });
+        updateStats();
+        applyFilters();
+    } catch(e) {
+        console.error('Error loading data:', e);
+    }
+}
+
+function updateStats() {
+    document.getElementById('totalSubmissions').textContent = allData.length;
+    document.getElementById('totalNotebook').textContent = allData.filter(function(d) { return d.type && d.type.startsWith('notebook'); }).length;
+    document.getElementById('totalQuiz').textContent = allData.filter(function(d) { return d.type && d.type.startsWith('quiz'); }).length;
+    document.getElementById('totalMessage').textContent = allData.filter(function(d) { return d.type === 'message'; }).length;
+}
+
+function applyFilters() {
+    var cls = document.getElementById('filterClass').value;
+    var type = document.getElementById('filterType').value;
+    var name = document.getElementById('filterName').value.trim().toLowerCase();
+
+    filteredData = allData.filter(function(d) {
+        if (cls && d.classroom !== cls) return false;
+        if (type && d.type !== type) return false;
+        if (name && d.name && d.name.toLowerCase().indexOf(name) === -1) return false;
+        return true;
+    });
+
+    // Sort by classroom then number
+    filteredData.sort(function(a, b) {
+        if (a.classroom !== b.classroom) return (a.classroom || '').localeCompare(b.classroom || '');
+        return (a.number || 0) - (b.number || 0);
+    });
+
+    renderTable();
+}
+
+function switchClassTab(cls) {
+    document.getElementById('filterClass').value = cls;
+    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+    event.target.classList.add('active');
+    applyFilters();
+}
+
+function renderTable() {
+    var tbody = document.getElementById('dataTable');
+    var emptyEl = document.getElementById('emptyState');
+
+    if (filteredData.length === 0) {
+        tbody.innerHTML = '';
+        emptyEl.style.display = 'block';
+        return;
+    }
+
+    emptyEl.style.display = 'none';
+    var html = '';
+    filteredData.forEach(function(d, i) {
+        var dateStr = '';
+        if (d.timestamp) {
+            var dt = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+            dateStr = dt.toLocaleDateString('th-TH') + ' ' + dt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        var contentCell = '';
+        if (d.type && d.type.startsWith('quiz')) {
+            var score = d.score || 0;
+            var scoreClass = score >= 8 ? 'score-high' : (score >= 5 ? 'score-mid' : 'score-low');
+            contentCell = '<span class="score-badge ' + scoreClass + '">' + score + '/10 (' + (score * 10) + '%)</span>';
+        } else {
+            var answer = d.answer || '';
+            var shortAns = answer.length > 80 ? answer.substring(0, 80) + '...' : answer;
+            contentCell = '<div class="answer-cell" onclick="showAnswer(' + i + ')">' + escapeHtml(shortAns) + '</div>';
+        }
+
+        html += '<tr>';
+        html += '<td>' + (i + 1) + '</td>';
+        html += '<td>' + escapeHtml(d.name || '-') + '</td>';
+        html += '<td>' + escapeHtml(d.classroom || '-') + '</td>';
+        html += '<td>' + (d.number || '-') + '</td>';
+        html += '<td>' + (typeLabels[d.type] || d.type || '-') + '</td>';
+        html += '<td>' + contentCell + '</td>';
+        html += '<td>' + dateStr + '</td>';
+        html += '</tr>';
+    });
+    tbody.innerHTML = html;
+}
+
+function escapeHtml(text) {
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showAnswer(index) {
+    var d = filteredData[index];
+    document.getElementById('modalTitle').textContent = (typeLabels[d.type] || d.type) + ' - ' + (d.name || '') + ' ' + (d.classroom || '') + ' เลขที่ ' + (d.number || '');
+    document.getElementById('modalBody').textContent = d.answer || '-';
+    document.getElementById('answerModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('answerModal').classList.remove('active');
+}
+
+function exportCSV() {
+    if (filteredData.length === 0) { alert('ไม่มีข้อมูลให้ Export'); return; }
+
+    var BOM = '\uFEFF';
+    var csv = BOM + 'ลำดับ,ชื่อ-นามสกุล,ห้อง,เลขที่,ประเภทงาน,คำตอบ/คะแนน,วันเวลาส่ง\n';
+
+    filteredData.forEach(function(d, i) {
+        var dateStr = '';
+        if (d.timestamp) {
+            var dt = d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp);
+            dateStr = dt.toLocaleDateString('th-TH') + ' ' + dt.toLocaleTimeString('th-TH');
+        }
+        var content = '';
+        if (d.type && d.type.startsWith('quiz')) {
+            content = (d.score || 0) + '/10';
+        } else {
+            content = (d.answer || '').replace(/"/g, '""');
+        }
+
+        csv += (i + 1) + ',';
+        csv += '"' + (d.name || '') + '",';
+        csv += '"' + (d.classroom || '') + '",';
+        csv += (d.number || '') + ',';
+        csv += '"' + (typeLabels[d.type] || d.type || '') + '",';
+        csv += '"' + content + '",';
+        csv += '"' + dateStr + '"\n';
+    });
+
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'submissions_m5_' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.click();
+}
+
+// Check session
+document.addEventListener('DOMContentLoaded', function() {
+    if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('mainHeader').style.display = 'flex';
+        document.getElementById('mainContent').style.display = 'block';
+        loadData();
+    }
+});
+</script>
+</body>
+</html>
