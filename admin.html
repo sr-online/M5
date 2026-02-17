@@ -70,6 +70,13 @@
         /* Export */
         .export-btn { background: #4facfe; color: white; border: none; padding: 10px 20px; border-radius: 10px; cursor: pointer; font-size: 0.9rem; }
 
+        /* Check button */
+        .check-btn { border: none; padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+        .check-btn.unchecked { background: #f0f0f0; color: #999; }
+        .check-btn.unchecked:hover { background: #e0e0e0; }
+        .check-btn.checked { background: #43e97b; color: white; }
+        .check-btn.checked:hover { background: #38d46c; }
+
         @media (max-width: 768px) {
             .header { flex-direction: column; align-items: flex-start; }
             .stats-grid { grid-template-columns: repeat(2, 1fr); }
@@ -109,6 +116,7 @@
         <div class="stat-card"><div class="num" id="totalNotebook">0</div><div class="label">งานสมุด</div></div>
         <div class="stat-card"><div class="num" id="totalQuiz">0</div><div class="label">แบบทดสอบ</div></div>
         <div class="stat-card"><div class="num" id="totalMessage">0</div><div class="label">ข้อความ</div></div>
+        <div class="stat-card"><div class="num" id="totalChecked" style="color:#43e97b;">0</div><div class="label">ตรวจแล้ว</div></div>
     </div>
 
     <!-- Filters -->
@@ -165,6 +173,7 @@
                     <th>ประเภทงาน</th>
                     <th>คำตอบ / คะแนน</th>
                     <th>วันเวลาส่ง</th>
+                    <th>สถานะ</th>
                 </tr>
             </thead>
             <tbody id="dataTable">
@@ -257,6 +266,7 @@ function updateStats() {
     document.getElementById('totalNotebook').textContent = allData.filter(function(d) { return d.type && d.type.startsWith('notebook'); }).length;
     document.getElementById('totalQuiz').textContent = allData.filter(function(d) { return d.type && d.type.startsWith('quiz'); }).length;
     document.getElementById('totalMessage').textContent = allData.filter(function(d) { return d.type === 'message'; }).length;
+    document.getElementById('totalChecked').textContent = allData.filter(function(d) { return d.checked === true; }).length;
 }
 
 function applyFilters() {
@@ -325,6 +335,8 @@ function renderTable() {
         html += '<td>' + (typeLabels[d.type] || d.type || '-') + '</td>';
         html += '<td>' + contentCell + '</td>';
         html += '<td>' + dateStr + '</td>';
+        var isChecked = d.checked === true;
+        html += '<td><button class="check-btn ' + (isChecked ? 'checked' : 'unchecked') + '" onclick="toggleChecked(\'' + d.id + '\',' + i + ')">' + (isChecked ? '✅ ตรวจแล้ว' : '⬜ ยังไม่ตรวจ') + '</button></td>';
         html += '</tr>';
     });
     tbody.innerHTML = html;
@@ -347,11 +359,26 @@ function closeModal() {
     document.getElementById('answerModal').classList.remove('active');
 }
 
+async function toggleChecked(docId, index) {
+    var d = filteredData[index];
+    var newStatus = !d.checked;
+    try {
+        await db.collection('submissions').doc(docId).update({ checked: newStatus });
+        // Update local data
+        d.checked = newStatus;
+        var item = allData.find(function(a) { return a.id === docId; });
+        if (item) item.checked = newStatus;
+        renderTable();
+    } catch(e) {
+        alert('เกิดข้อผิดพลาด: ' + e.message);
+    }
+}
+
 function exportCSV() {
     if (filteredData.length === 0) { alert('ไม่มีข้อมูลให้ Export'); return; }
 
     var BOM = '\uFEFF';
-    var csv = BOM + 'ลำดับ,ชื่อ-นามสกุล,ห้อง,เลขที่,ประเภทงาน,คำตอบ/คะแนน,วันเวลาส่ง\n';
+    var csv = BOM + 'ลำดับ,ชื่อ-นามสกุล,ห้อง,เลขที่,ประเภทงาน,คำตอบ/คะแนน,วันเวลาส่ง,สถานะ\n';
 
     filteredData.forEach(function(d, i) {
         var dateStr = '';
@@ -372,7 +399,8 @@ function exportCSV() {
         csv += (d.number || '') + ',';
         csv += '"' + (typeLabels[d.type] || d.type || '') + '",';
         csv += '"' + content + '",';
-        csv += '"' + dateStr + '"\n';
+        csv += '"' + dateStr + '",';
+        csv += '"' + (d.checked ? 'ตรวจแล้ว' : 'ยังไม่ตรวจ') + '"\n';
     });
 
     var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
