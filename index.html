@@ -66,6 +66,7 @@
         .submit-btn { background: linear-gradient(135deg, #667eea, #764ba2); color: white; border: none; padding: 12px 30px; border-radius: 12px; font-size: 1rem; cursor: pointer; margin-top: 12px; width: 100%; transition: transform 0.2s; }
         .submit-btn:hover { transform: scale(1.02); }
         .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .submit-btn.sent { background: #43e97b; opacity: 1; cursor: default; }
         .back-btn { background: #eee; color: #555; border: none; padding: 10px 24px; border-radius: 10px; cursor: pointer; margin-top: 10px; font-size: 0.9rem; }
 
         /* Quiz */
@@ -275,7 +276,7 @@
             <strong>โจทย์:</strong> จากปัญหาดังกล่าว นักเรียนคิดว่าจะพัฒนาโครงงานประเภทใด และมีแนวทางการพัฒนาอย่างไร
         </div>
         <textarea id="answer-notebook1" placeholder="พิมพ์คำตอบของนักเรียนที่นี่..."></textarea>
-        <button class="submit-btn" onclick="submitNotebook('notebook1')">📤 ส่งงานสมุด 1</button>
+        <button class="submit-btn" id="submitBtn-notebook1" onclick="submitNotebook('notebook1')">📤 ส่งงานสมุด 1</button>
         <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
     </div>
 
@@ -289,7 +290,7 @@
             <strong>โจทย์:</strong> นักเรียนคิดว่าควรออกแบบและเลือกใช้เทคโนโลยีใดเพื่อแก้ปัญหาดังกล่าว
         </div>
         <textarea id="answer-notebook2" placeholder="พิมพ์คำตอบของนักเรียนที่นี่..."></textarea>
-        <button class="submit-btn" onclick="submitNotebook('notebook2')">📤 ส่งงานสมุด 2</button>
+        <button class="submit-btn" id="submitBtn-notebook2" onclick="submitNotebook('notebook2')">📤 ส่งงานสมุด 2</button>
         <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
     </div>
 
@@ -303,7 +304,7 @@
             <strong>โจทย์:</strong> นักเรียนคิดว่าควรพัฒนาออกแบบเทคโนโลยีใด เพื่อแก้ปัญหาดังกล่าว
         </div>
         <textarea id="answer-notebook3" placeholder="พิมพ์คำตอบของนักเรียนที่นี่..."></textarea>
-        <button class="submit-btn" onclick="submitNotebook('notebook3')">📤 ส่งงานสมุด 3</button>
+        <button class="submit-btn" id="submitBtn-notebook3" onclick="submitNotebook('notebook3')">📤 ส่งงานสมุด 3</button>
         <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
     </div>
 
@@ -388,9 +389,9 @@
     <!-- Message to Teacher -->
     <div class="section-panel" id="section-messageTeacher">
         <h2>💌 ข้อความถึงคุณครู</h2>
-        <p style="color:#888; margin-bottom:14px;">อยากบอกอะไรคุณครู พิมพ์ได้เลยนะครับ 😊</p>
+        <p style="color:#888; margin-bottom:14px;">อยากบอกอะไรคุณครู พิมพ์ได้เลยนะจ๊ะ 😊</p>
         <textarea id="messageText" placeholder="พิมพ์ข้อความถึงคุณครูที่นี่..." style="min-height:150px;"></textarea>
-        <button class="submit-btn" onclick="submitMessage()">📤 ส่งข้อความ</button>
+        <button class="submit-btn" id="submitBtn-message" onclick="submitMessage()">📤 ส่งข้อความ</button>
         <button class="back-btn" onclick="goBack()">← กลับหน้าหลัก</button>
     </div>
 
@@ -428,6 +429,7 @@ function saveStudentInfo() {
     localStorage.setItem('studentData', JSON.stringify(studentData));
     showSavedState();
     document.getElementById('menuArea').style.display = 'block';
+    checkAndRestoreButtons();
     showToast('บันทึกข้อมูลเรียบร้อย!');
 }
 
@@ -485,6 +487,7 @@ function goBack() {
 
 // Begin Quiz (show questions + start timer)
 function beginQuiz(quizId) {
+    if (isAlreadySubmitted(quizId)) { showToast('ส่งแบบทดสอบนี้ไปแล้ว'); return; }
     document.getElementById('quizIntro-' + quizId).style.display = 'none';
     document.getElementById('quizContent-' + quizId).style.display = 'block';
     if (!quizTimers[quizId]) { startQuizTimer(quizId); }
@@ -498,11 +501,60 @@ function showToast(msg) {
     setTimeout(function() { t.style.display = 'none'; }, 3000);
 }
 
+// Track submitted items (localStorage + runtime)
+var submittedItems = JSON.parse(localStorage.getItem('submittedItems') || '{}');
+
+function getSubmitKey(type) {
+    return type + '_' + studentData.classroom + '_' + studentData.number;
+}
+
+function markAsSubmitted(type, btnId) {
+    var key = getSubmitKey(type);
+    submittedItems[key] = true;
+    localStorage.setItem('submittedItems', JSON.stringify(submittedItems));
+    var btn = document.getElementById(btnId);
+    btn.disabled = true;
+    btn.classList.add('sent');
+    btn.textContent = '✅ ส่งงานแล้ว';
+}
+
+function isAlreadySubmitted(type) {
+    var key = getSubmitKey(type);
+    return submittedItems[key] === true;
+}
+
+function checkAndRestoreButtons() {
+    ['notebook1','notebook2','notebook3'].forEach(function(id) {
+        if (isAlreadySubmitted(id)) markAsSubmitted(id, 'submitBtn-' + id);
+    });
+    ['quiz1','quiz2','quiz3'].forEach(function(id) {
+        if (isAlreadySubmitted(id)) {
+            document.getElementById('submitBtn-' + id).style.display = 'none';
+            // ซ่อนปุ่มเริ่มทำด้วย
+            var intro = document.getElementById('quizIntro-' + id);
+            if (intro) {
+                intro.innerHTML = '<div style="padding:20px;text-align:center;color:#43e97b;font-weight:700;font-size:1.1rem;">✅ ส่งแบบทดสอบนี้แล้ว</div>';
+            }
+        }
+    });
+    if (isAlreadySubmitted('message')) markAsSubmitted('message', 'submitBtn-message');
+}
+
 // Submit Notebook
+var notebookSubmitting = {};
 async function submitNotebook(id) {
     if (!checkStudent()) return;
+    if (isAlreadySubmitted(id)) { showToast('ส่งงานนี้ไปแล้ว ไม่ต้องส่งซ้ำนะ'); return; }
+    if (notebookSubmitting[id]) return; // กำลังส่งอยู่
+
     var answer = document.getElementById('answer-' + id).value.trim();
     if (!answer) { showToast('กรุณาพิมพ์คำตอบก่อนส่ง'); return; }
+
+    var btn = document.getElementById('submitBtn-' + id);
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังส่ง...';
+    notebookSubmitting[id] = true;
+
     try {
         await db.collection('submissions').add({
             type: id,
@@ -512,18 +564,31 @@ async function submitNotebook(id) {
             answer: answer,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
+        markAsSubmitted(id, 'submitBtn-' + id);
         showToast('ส่งงานเรียบร้อยแล้ว!');
-        document.getElementById('answer-' + id).value = '';
     } catch(e) {
+        btn.disabled = false;
+        btn.textContent = '📤 ส่ง' + id.replace('notebook', 'งานสมุด ');
+        notebookSubmitting[id] = false;
         showToast('เกิดข้อผิดพลาด: ' + e.message);
     }
 }
 
 // Submit Message
+var messageSubmitting = false;
 async function submitMessage() {
     if (!checkStudent()) return;
+    if (isAlreadySubmitted('message')) { showToast('ส่งข้อความไปแล้ว ไม่ต้องส่งซ้ำนะ'); return; }
+    if (messageSubmitting) return;
+
     var msg = document.getElementById('messageText').value.trim();
     if (!msg) { showToast('กรุณาพิมพ์ข้อความก่อนส่ง'); return; }
+
+    var btn = document.getElementById('submitBtn-message');
+    btn.disabled = true;
+    btn.textContent = '⏳ กำลังส่ง...';
+    messageSubmitting = true;
+
     try {
         await db.collection('submissions').add({
             type: 'message',
@@ -533,9 +598,12 @@ async function submitMessage() {
             answer: msg,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
+        markAsSubmitted('message', 'submitBtn-message');
         showToast('ส่งข้อความถึงคุณครูเรียบร้อยแล้ว!');
-        document.getElementById('messageText').value = '';
     } catch(e) {
+        btn.disabled = false;
+        btn.textContent = '📤 ส่งข้อความ';
+        messageSubmitting = false;
         showToast('เกิดข้อผิดพลาด: ' + e.message);
     }
 }
@@ -632,6 +700,7 @@ function startQuizTimer(quizId) {
 
 async function submitQuiz(quizId) {
     if (quizSubmitted[quizId]) return;
+    if (isAlreadySubmitted(quizId)) { showToast('ส่งแบบทดสอบนี้ไปแล้ว'); return; }
     if (!checkStudent()) return;
 
     quizSubmitted[quizId] = true;
@@ -670,6 +739,10 @@ async function submitQuiz(quizId) {
             answers: answers,
             timestamp: firebase.firestore.FieldValue.serverTimestamp()
         });
+        // บันทึกว่าส่งแล้ว
+        var key = getSubmitKey(quizId);
+        submittedItems[key] = true;
+        localStorage.setItem('submittedItems', JSON.stringify(submittedItems));
         showToast('ส่งแบบทดสอบเรียบร้อย! ได้ ' + score + '/10 คะแนน');
     } catch(e) {
         showToast('เกิดข้อผิดพลาด: ' + e.message);
@@ -682,6 +755,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderQuiz('quiz1');
     renderQuiz('quiz2');
     renderQuiz('quiz3');
+    checkAndRestoreButtons();
 });
 </script>
 </body>
