@@ -124,8 +124,8 @@
 
 <div class="container">
 
-    <!-- Student Info -->
-    <div class="student-info" id="studentInfo">
+    <!-- Student Info - Form -->
+    <div class="student-info" id="studentFormArea">
         <h3>📝 กรอกข้อมูลนักเรียน</h3>
         <div class="form-row">
             <input type="text" id="studentName" placeholder="ชื่อ-นามสกุล">
@@ -146,7 +146,17 @@
             <input type="number" id="studentNumber" placeholder="เลขที่" min="1" max="60">
         </div>
         <button class="save-info-btn" onclick="saveStudentInfo()">💾 บันทึกและเข้าใช้งาน</button>
-        <div id="savedInfo" style="margin-top:10px; color:#43e97b; font-weight:600; display:none;"></div>
+    </div>
+
+    <!-- Student Info - Saved Display -->
+    <div class="student-info" id="studentSavedArea" style="display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+            <div>
+                <div style="color:#764ba2; font-weight:700; font-size:1.05rem;" id="savedDisplayName"></div>
+                <div style="color:#888; font-size:0.9rem; margin-top:4px;" id="savedDisplayDetail"></div>
+            </div>
+            <button onclick="editStudentInfo()" style="background:#eee; color:#555; border:none; padding:8px 18px; border-radius:10px; cursor:pointer; font-size:0.9rem;">✏️ แก้ไข</button>
+        </div>
     </div>
 
     <!-- Menu (hidden until student info saved) -->
@@ -416,8 +426,7 @@ function saveStudentInfo() {
     if (!name || !cls || !num) { showToast('กรุณากรอกข้อมูลให้ครบถ้วน'); return; }
     studentData = { name, classroom: cls, number: parseInt(num) };
     localStorage.setItem('studentData', JSON.stringify(studentData));
-    document.getElementById('savedInfo').style.display = 'block';
-    document.getElementById('savedInfo').textContent = '✅ บันทึกแล้ว: ' + name + ' ' + cls + ' เลขที่ ' + num;
+    showSavedState();
     document.getElementById('menuArea').style.display = 'block';
     showToast('บันทึกข้อมูลเรียบร้อย!');
 }
@@ -426,13 +435,25 @@ function loadStudentInfo() {
     const saved = localStorage.getItem('studentData');
     if (saved) {
         studentData = JSON.parse(saved);
-        document.getElementById('studentName').value = studentData.name;
-        document.getElementById('studentClass').value = studentData.classroom;
-        document.getElementById('studentNumber').value = studentData.number;
-        document.getElementById('savedInfo').style.display = 'block';
-        document.getElementById('savedInfo').textContent = '✅ ' + studentData.name + ' ' + studentData.classroom + ' เลขที่ ' + studentData.number;
+        showSavedState();
         document.getElementById('menuArea').style.display = 'block';
     }
+}
+
+function showSavedState() {
+    document.getElementById('studentFormArea').style.display = 'none';
+    document.getElementById('studentSavedArea').style.display = 'block';
+    document.getElementById('savedDisplayName').textContent = '👤 ' + studentData.name;
+    document.getElementById('savedDisplayDetail').textContent = studentData.classroom + ' เลขที่ ' + studentData.number;
+}
+
+function editStudentInfo() {
+    document.getElementById('studentSavedArea').style.display = 'none';
+    document.getElementById('studentFormArea').style.display = 'block';
+    document.getElementById('studentName').value = studentData.name;
+    document.getElementById('studentClass').value = studentData.classroom;
+    document.getElementById('studentNumber').value = studentData.number;
+    document.getElementById('studentName').focus();
 }
 
 function checkStudent() {
